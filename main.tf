@@ -92,7 +92,7 @@ resource "aws_instance" "jenkins_target" {
   ami           = "ami-0ad21ae1d0696ad58"  # Replace with a valid AMI ID
   instance_type = "t3.medium"
   subnet_id     = aws_subnet.main_subnet.id
-  security_groups = [aws_security_group.main_sg.name]
+  security_group_ids = [aws_security_group.main_sg.id]
 
   tags = {
     Name = "Jenkins-target"
@@ -104,7 +104,7 @@ resource "aws_instance" "nexus" {
   ami           = "ami-0ad21ae1d0696ad58"  # Replace with a valid AMI ID
   instance_type = "t3.medium"
   subnet_id     = aws_subnet.main_subnet.id
-  security_groups = [aws_security_group.main_sg.name]
+  security_group_ids = [aws_security_group.main_sg.id]
 
   tags = {
     Name = "Nexus"
@@ -116,8 +116,7 @@ resource "aws_instance" "kubernetes" {
   ami           = "ami-0ad21ae1d0696ad58"  # Replace with a valid AMI ID
   instance_type = "t3.medium"
   subnet_id     = aws_subnet.main_subnet.id
-  #security_group_id = ["sg-0dc9dba3e16acb461"]
-  security_groups = [aws_security_group.main_sg.name]
+  security_group_ids = [aws_security_group.main_sg.id]
 
   tags = {
     Name = "Kubernetes"
