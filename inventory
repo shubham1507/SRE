@@ -1,0 +1,8 @@
+[jenkins_target]
+10.0.1.245
+
+[nexus]
+10.0.1.56
+
+[kubernetes]
+10.0.1.137

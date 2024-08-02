@@ -1,0 +1,22 @@
+---
+- name: Install MicroK8s on Kubernetes Server
+  hosts: kubernetes
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install MicroK8s
+      snap:
+        name: microk8s
+        state: present
+
+    - name: Add user to microk8s group
+      user:
+        name: "{{ ansible_user }}"
+        groups: microk8s
+        append: yes
+
+    - name: Enable MicroK8s addons
+      command: microk8s enable dns storage

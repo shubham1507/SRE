@@ -1,0 +1,62 @@
+---
+- name: Install Nexus on Nexus Server
+  hosts: nexus
+  become: yes
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - openjdk-11-jdk
+        state: present
+
+    - name: Download Nexus
+      get_url:
+        url: 'https://download.sonatype.com/nexus/3/latest-unix.tar.gz'
+        dest: '/tmp/nexus.tar.gz'
+
+    - name: Extract Nexus
+      unarchive:
+        src: '/tmp/nexus.tar.gz'
+        dest: '/opt'
+        remote_src: yes
+
+    - name: Create Nexus user
+      user:
+        name: nexus
+        shell: /bin/bash
+        home: /opt/nexus
+
+    - name: Change ownership of Nexus directory
+      file:
+        path: '/opt/nexus-3.*'
+        owner: nexus
+        group: nexus
+        recurse: yes
+
+    - name: Create Nexus symlink
+      command: 'ln -s /opt/nexus-3.* /opt/nexus'
+
+    - name: Create Nexus service file
+      copy:
+        dest: /etc/systemd/system/nexus.service
+        content: |
+          [Unit]
+          Description=Nexus Repository Manager
+          After=syslog.target network.target
+
+          [Service]
+          Type=forking
+          User=nexus
+          Group=nexus
+          ExecStart=/opt/nexus/bin/nexus start
+          ExecStop=/opt/nexus/bin/nexus stop
+          Restart=on-failure
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Enable and start Nexus service
+      systemd:
+        name: nexus
+        state: started
+        enabled: yes
