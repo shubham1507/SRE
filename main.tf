@@ -13,8 +13,9 @@ resource "aws_vpc" "main_vpc" {
 
 # Subnet
 resource "aws_subnet" "main_subnet" {
-  vpc_id     = aws_vpc.main_vpc.id
-  cidr_block = "10.0.1.0/24"
+  vpc_id                  = aws_vpc.main_vpc.id
+  cidr_block              = "10.0.1.0/24"
+  map_public_ip_on_launch = true  # Enable public IP assignment
 
   tags = {
     Name = "main_subnet"
@@ -58,7 +59,7 @@ resource "aws_security_group" "main_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["13.233.177.0/29"]  # Replace with your IP range or trusted IP addresses
   }
 
   ingress {
