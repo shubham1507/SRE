@@ -129,10 +129,22 @@ output "jenkins_target_public_ip" {
   value = aws_instance.jenkins_target.public_ip
 }
 
+output "jenkins_target_public_dns" {
+  value = aws_instance.jenkins_target.public_dns
+}
+
 output "nexus_public_ip" {
   value = aws_instance.nexus.public_ip
 }
 
+output "nexus_public_dns" {
+  value = aws_instance.nexus.public_dns
+}
+
 output "kubernetes_public_ip" {
   value = aws_instance.kubernetes.public_ip
+}
+
+output "kubernetes_public_dns" {
+  value = aws_instance.kubernetes.public_dns
 }
