@@ -1,0 +1,89 @@
+---
+- name: Install Jenkins
+  hosts: jenkins_target
+  become: yes
+  tasks:
+    - name: Install Java
+      apt:
+        name: openjdk-11-jdk
+        state: present
+
+    - name: Add Jenkins repository
+      apt_repository:
+        repo: deb http://pkg.jenkins.io/debian-stable binary/
+        state: present
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+        update_cache: yes
+
+    - name: Start and enable Jenkins
+      systemd:
+        name: jenkins
+        state: started
+        enabled: yes
+
+- name: Install Nexus
+  hosts: Nexus
+  become: yes
+  tasks:
+    - name: Install Java
+      apt:
+        name: openjdk-11-jdk
+        state: present
+
+    - name: Download Nexus
+      get_url:
+        url: https://download.sonatype.com/nexus/3/latest-unix.tar.gz
+        dest: /tmp/nexus.tar.gz
+
+    - name: Extract Nexus
+      unarchive:
+        src: /tmp/nexus.tar.gz
+        dest: /opt/
+        remote_src: yes
+
+    - name: Create symlink for Nexus
+      file:
+        src: /opt/nexus-3.*
+        dest: /opt/nexus
+        state: link
+
+    - name: Create Nexus user
+      user:
+        name: nexus
+        shell: /bin/bash
+        create_home: yes
+
+    - name: Change ownership of Nexus directory
+      file:
+        path: /opt/nexus
+        owner: nexus
+        group: nexus
+        recurse: yes
+
+    - name: Start Nexus
+      shell: |
+        su - nexus -c "/opt/nexus/bin/nexus start"
+
+- name: Install MicroK8s
+  hosts: Kubernetes
+  become: yes
+  tasks:
+    - name: Install Snap
+      apt:
+        name: snapd
+        state: present
+
+    - name: Install MicroK8s
+      snap:
+        name: microk8s
+        state: present
+
+    - name: Add user to microk8s group
+      user:
+        name: "{{ ansible_user }}"
+        groups: microk8s
+        append: yes

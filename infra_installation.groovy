@@ -2,68 +2,79 @@ pipeline {
     agent any
 
     environment {
-        ANSIBLE_HOST_KEY_CHECKING = 'False'
-        GIT_REPO_URL = 'https://github.com/shubham1507/SRE.git'
-        GIT_BRANCH = 'master' // Adjust if needed
-        SSH_PRIVATE_KEY = credentials('ssh-private-key-id') // Add your SSH private key credential ID here
+        GIT_REPO = 'https://github.com/shubham1507/SRE.git'
+        ANSIBLE_PLAYBOOK = 'install_tools.yml'
+        INVENTORY_FILE = 'inventory.ini'
+        SSH_KEY_PATH = '/var/lib/jenkins/.ssh/id_rsa'
+        SSH_PUBLIC_KEY_PATH = '/var/lib/jenkins/.ssh/id_rsa.pub'
+        USER = 'jenkins'  // Change to your username if different
     }
 
     stages {
-        stage('Checkout Repository') {
+        stage('Generate SSH Key Pair') {
             steps {
                 script {
-                    git branch: "${env.GIT_BRANCH}", url: "${env.GIT_REPO_URL}"
+                    // Generate SSH key pair if it does not exist
+                    sh """
+                    if [ ! -f ${env.SSH_KEY_PATH} ]; then
+                        ssh-keygen -t rsa -b 4096 -C "${env.USER}@localhost" -f ${env.SSH_KEY_PATH} -N ""
+                    fi
+                    """
                 }
             }
         }
 
-        stage('Check SSH Connectivity') {
+        stage('Add Public Key to Remote Servers') {
             steps {
                 script {
-                    // Set up SSH configuration
-                    writeFile file: '/tmp/ssh_config', text: '''
-                        Host target
-                            Hostname 10.0.1.133
-                            User user
-                            IdentityFile /tmp/private_key
-                    '''
-                    // Add private key to a temporary file
-                    writeFile file: '/tmp/private_key', text: "${env.SSH_PRIVATE_KEY}"
-                    sh '''
-                        chmod 600 /tmp/private_key
-                        chmod 600 /tmp/ssh_config
-                        ssh -F /tmp/ssh_config -o StrictHostKeyChecking=no target "echo 'SSH connection successful'"
-                    '''
+                    // Read the public key
+                    def publicKey = sh(script: "cat ${env.SSH_PUBLIC_KEY_PATH}", returnStdout: true).trim()
+
+                    // Commands to add public key to remote servers
+                    def commands = [
+                        "sshpass -p 'password' ssh ${env.USER}@10.0.1.133 'mkdir -p ~/.ssh && echo \"${publicKey}\" >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys'",
+                        "sshpass -p 'password' ssh ${env.USER}@10.0.1.219 'mkdir -p ~/.ssh && echo \"${publicKey}\" >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys'",
+                        "sshpass -p 'password' ssh ${env.USER}@10.0.1.234 'mkdir -p ~/.ssh && echo \"${publicKey}\" >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys'"
+                    ]
+
+                    // Execute commands
+                    commands.each { command ->
+                        sh command
+                    }
                 }
             }
         }
 
-        stage('Install Jenkins on Target Server') {
+        stage('Checkout Ansible Playbook') {
+            steps {
+                git url: "${env.GIT_REPO}"
+            }
+        }
+
+        stage('Install Tools') {
             steps {
                 script {
-                    sh '''
-                        ansible-playbook -i inventory install_jenkins.yml
-                    '''
+                    // Run Ansible Playbook
+                    sh """
+                    ansible-playbook -i ${env.INVENTORY_FILE} ${env.ANSIBLE_PLAYBOOK} --private-key=${env.SSH_KEY_PATH}
+                    """
                 }
             }
         }
 
-        stage('Install Nexus on Nexus Server') {
+        stage('Update Firewall Rules') {
             steps {
                 script {
-                    sh '''
-                        ansible-playbook -i inventory install_nexus.yml
-                    '''
-                }
-            }
-        }
+                    // Define commands to update firewall rules
+                    def commands = [
+                        "ssh -i ${env.SSH_KEY_PATH} ${env.USER}@10.0.1.133 'sudo ufw allow 8080/tcp'",
+                        "ssh -i ${env.SSH_KEY_PATH} ${env.USER}@10.0.1.219 'sudo ufw allow 8081/tcp'",
+                        "ssh -i ${env.SSH_KEY_PATH} ${env.USER}@10.0.1.234 'sudo ufw allow 8082/tcp'"
+                    ]
 
-        stage('Install MicroK8s on Kubernetes Server') {
-            steps {
-                script {
-                    sh '''
-                        ansible-playbook -i inventory install_microk8s.yml
-                    '''
+                    commands.each { command ->
+                        sh command
+                    }
                 }
             }
         }
@@ -71,10 +82,10 @@ pipeline {
 
     post {
         always {
+            // Archive Ansible logs if available
+            archiveArtifacts artifacts: '**/ansible.log', allowEmptyArchive: true
+            // Clean up workspace
             cleanWs()
-        }
-        failure {
-            echo 'Pipeline failed. Please check the logs for more details.'
         }
     }
 }
