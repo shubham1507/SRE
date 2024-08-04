@@ -1,50 +1,52 @@
 pipeline {
     agent any
-
+    
+    environment {
+        ANSIBLE_GIT_REPO = 'https://github.com/shubham1507/SRE.git'
+        ANSIBLE_PLAYBOOK = 'install_tools.yml'
+        INVENTORY_FILE = 'inventory.ini'
+    }
+    
     stages {
         stage('Checkout') {
             steps {
-                
-                git url: 'https://github.com/shubham1507/SRE.git', branch: 'master'
+                git branch: 'master', url: "${ANSIBLE_GIT_REPO}"
             }
         }
         
         stage('Install Ansible') {
             steps {
-               
-                sh 'sudo apt-get update'
-                sh 'sudo apt-get install -y ansible'
+                script {
+                    sh '''
+                    if ! command -v ansible >/dev/null; then
+                        echo "Ansible not found. Installing..."
+                        sudo apt-get update
+                        sudo apt-get install -y ansible
+                    else
+                        echo "Ansible is already installed."
+                    fi
+                    '''
+                }
             }
         }
-        
-        stage('Create Inventory File') {
-            steps {
-              
-                writeFile file: 'inventory.ini', text: '''
-[jenkins_target]
-10.0.1.52 ansible_ssh_user=ubuntu
 
-[nexus]
-10.0.1.188 ansible_ssh_user=ubuntu
-
-[kubernetes]
-10.0.1.35 ansible_ssh_user=ubuntu
-'''
-            }
-        }
-        
         stage('Run Ansible Playbook') {
             steps {
-                // Run the Ansible playbook
-                sh 'ansible-playbook -i inventory.ini install_tools.yml'
+                withCredentials([sshUserPrivateKey(credentialsId: 'ubuntu', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')]) {
+                    script {
+                        sh "ansible-playbook -i ${INVENTORY_FILE} ${ANSIBLE_PLAYBOOK} -u ${SSH_USER} --private-key ${SSH_KEY}"
+                    }
+                }
             }
         }
     }
     
     post {
-        always {
-            // Clean up workspace after build
-            cleanWs()
+        success {
+            echo 'Playbook executed successfully.'
+        }
+        failure {
+            echo 'Playbook execution failed.'
         }
     }
 }
