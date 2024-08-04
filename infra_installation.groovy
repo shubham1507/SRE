@@ -1,52 +1,54 @@
 pipeline {
     agent any
-    
+
     environment {
-        ANSIBLE_GIT_REPO = 'https://github.com/shubham1507/SRE.git'
-        ANSIBLE_PLAYBOOK = 'install_tools.yml'
+        GIT_REPO_URL = 'https://github.com/shubham1507/SRE.git'
         INVENTORY_FILE = 'inventory.ini'
+        ANSIBLE_PLAYBOOK = 'install_tools.yml'
     }
-    
+
     stages {
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
-                git branch: 'master', url: "${ANSIBLE_GIT_REPO}"
+                // Clone the Git repository containing the Ansible playbook
+                git url: "${env.GIT_REPO_URL}"
             }
         }
-        
-        stage('Install Ansible') {
+
+        stage('Prepare Inventory') {
             steps {
                 script {
-                    sh '''
-                    if ! command -v ansible >/dev/null; then
-                        echo "Ansible not found. Installing..."
-                        sudo apt-get update
-                        sudo apt-get install -y ansible
-                    else
-                        echo "Ansible is already installed."
-                    fi
-                    '''
+                    // Write the inventory file dynamically
+                    writeFile file: "${env.INVENTORY_FILE}", text: '''\
+[jenkins_target]
+10.0.1.120
+
+[nexus]
+10.0.1.178
+
+[kubernetes]
+10.0.1.156
+
+[all:vars]
+ansible_user=ubuntu
+'''
                 }
             }
         }
 
         stage('Run Ansible Playbook') {
             steps {
-                withCredentials([sshUserPrivateKey(credentialsId: 'ubuntu', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')]) {
-                    script {
-                        sh "ansible-playbook -i ${INVENTORY_FILE} ${ANSIBLE_PLAYBOOK} -u ${SSH_USER} --private-key ${SSH_KEY}"
-                    }
+                withCredentials([sshUserPrivateKey(credentialsId: 'ubuntu_ssh', keyFileVariable: 'SSH_KEY')]) {
+                    sh "ansible-playbook -i ${env.INVENTORY_FILE} ${env.ANSIBLE_PLAYBOOK} --private-key=${SSH_KEY}"
                 }
             }
         }
     }
-    
+
     post {
-        success {
-            echo 'Playbook executed successfully.'
-        }
-        failure {
-            echo 'Playbook execution failed.'
+        always {
+            // Clean up
+            deleteDir()
         }
     }
 }
