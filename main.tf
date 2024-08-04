@@ -1,5 +1,5 @@
 provider "aws" {
-  region = "ap-south-1"  # Change to your desired region
+  region = "ap-south-1" 
 }
 
 # VPC
@@ -15,7 +15,7 @@ resource "aws_vpc" "main_vpc" {
 resource "aws_subnet" "main_subnet" {
   vpc_id                  = aws_vpc.main_vpc.id
   cidr_block              = "10.0.1.0/24"
-  map_public_ip_on_launch = true  # Enable public IP assignment
+  map_public_ip_on_launch = true  
 
   tags = {
     Name = "main_subnet"
