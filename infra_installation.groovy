@@ -1,47 +1,49 @@
 pipeline {
     agent any
 
-    environment {
-        GIT_REPO = 'https://github.com/shubham1507/SRE.git'
-        ANSIBLE_PLAYBOOK = 'install_tools.yml'
-        INVENTORY_FILE = 'inventory.ini'
-        SSH_KEY_PATH = '/var/lib/jenkins/.ssh/id_rsa.pem'
-        USER = 'ubuntu'
-    }
-
     stages {
-        stage('Generate SSH Key Pair') {
+        stage('Checkout') {
             steps {
-                script {
-                    sh """
-                    if [ ! -f ${env.SSH_KEY_PATH} ]; then
-                        echo "Please upload your PEM file to ${env.SSH_KEY_PATH}"
-                    fi
-                    """
-                }
+                
+                git url: 'https://github.com/shubham1507/SRE.git', branch: 'master'
             }
         }
-
-        stage('Checkout Ansible Playbooks') {
+        
+        stage('Install Ansible') {
             steps {
-                git url: "${env.GIT_REPO}"
+               
+                sh 'sudo apt-get update'
+                sh 'sudo apt-get install -y ansible'
             }
         }
-
-        stage('Install Tools') {
+        
+        stage('Create Inventory File') {
             steps {
-                script {
-                    sh """
-                    ansible-playbook -i ${env.INVENTORY_FILE} ${env.ANSIBLE_PLAYBOOK} --private-key=${env.SSH_KEY_PATH}
-                    """
-                }
+              
+                writeFile file: 'inventory.ini', text: '''
+[jenkins_target]
+10.0.1.52 ansible_ssh_user=ubuntu
+
+[nexus]
+10.0.1.188 ansible_ssh_user=ubuntu
+
+[kubernetes]
+10.0.1.35 ansible_ssh_user=ubuntu
+'''
+            }
+        }
+        
+        stage('Run Ansible Playbook') {
+            steps {
+                // Run the Ansible playbook
+                sh 'ansible-playbook -i inventory.ini install_tools.yml'
             }
         }
     }
-
+    
     post {
         always {
-            archiveArtifacts artifacts: '**/*.log', allowEmptyArchive: true
+            // Clean up workspace after build
             cleanWs()
         }
     }
