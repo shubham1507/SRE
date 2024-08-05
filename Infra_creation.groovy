@@ -15,7 +15,7 @@ pipeline {
             }
         }
 
-        stage('Check Tools') {
+        stage('Setup Terraform') {
             steps {
                 script {
                     sh '''
@@ -23,23 +23,43 @@ pipeline {
                         set -e
 
                         echo "Checking PATH: $PATH"
-                        echo "Checking for unzip..."
-                        which unzip || { echo "unzip not found in PATH"; exit 1; }
+
+                        # Install unzip if not available
+                        if ! command -v unzip &> /dev/null; then
+                            echo "unzip not found. Installing..."
+                            sudo apt-get update && sudo apt-get install -y unzip
+                        else
+                            echo "unzip is installed."
+                        fi
 
                         echo "Checking for terraform..."
                         if ! command -v terraform &> /dev/null; then
                             echo "Terraform not found. Installing..."
-                            wget https://releases.hashicorp.com/terraform/1.0.0/terraform_1.0.0_linux_amd64.zip
-                            unzip terraform_1.0.0_linux_amd64.zip
+
+                            # Define version and download URL
+                            VERSION="1.0.0"
+                            URL="https://releases.hashicorp.com/terraform/${VERSION}/terraform_${VERSION}_linux_amd64.zip"
                             
-                            # Move terraform to a directory where Jenkins has write permissions
-                            mkdir -p $HOME/bin
-                            mv terraform $HOME/bin/
-                            echo "Added $HOME/bin to PATH"
-                            export PATH=$HOME/bin:$PATH
+                            # Download Terraform
+                            wget $URL -O terraform.zip
+
+                            # Unzip the downloaded file
+                            unzip terraform.zip
+
+                            # Move terraform to a writable directory within the workspace
+                            mkdir -p $WORKSPACE/bin
+                            mv terraform $WORKSPACE/bin/
+                            echo "Added $WORKSPACE/bin to PATH"
+
+                            # Ensure PATH is updated in this script's environment
+                            export PATH=$WORKSPACE/bin:$PATH
+                            echo "PATH: $PATH"
+
+                            # Verify installation
                             terraform --version
                         else
-                            echo "Terraform is installed."
+                            echo "Terraform is already installed."
+                            terraform --version
                         fi
                     '''
                 }
@@ -48,13 +68,23 @@ pipeline {
 
         stage('Terraform Init') {
             steps {
-                sh 'terraform init'
+                script {
+                    // Add $WORKSPACE/bin to PATH for this stage
+                    withEnv(["PATH+WORKSPACE=${env.WORKSPACE}/bin"]) {
+                        sh 'terraform init'
+                    }
+                }
             }
         }
 
         stage('Terraform Apply') {
             steps {
-                sh 'terraform apply -auto-approve'
+                script {
+                    // Add $WORKSPACE/bin to PATH for this stage
+                    withEnv(["PATH+WORKSPACE=${env.WORKSPACE}/bin"]) {
+                        sh 'terraform apply -auto-approve'
+                    }
+                }
             }
         }
     }

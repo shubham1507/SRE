@@ -20,11 +20,15 @@ pipeline {
                 script {
                     // Download the inventory file from the specified URL
                     sh "wget ${env.INVENTORY_FILE_URL}"
-                }
 
-                // Run Ansible playbook
-                withCredentials([sshUserPrivateKey(credentialsId: 'ubuntu_ssh', keyFileVariable: 'SSH_KEY')]) {
-                    sh "ansible-playbook -i inventory.ini ${env.ANSIBLE_PLAYBOOK} --private-key=${SSH_KEY}"
+                    // Use withCredentials to access the SSH key
+                    withCredentials([sshUserPrivateKey(credentialsId: 'ubuntu_ssh', keyFileVariable: 'SSH_KEY')]) {
+                        // Check SSH connectivity
+                        sh "ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ubuntu@10.0.1.68 hostname"
+                        
+                        // Run Ansible playbook
+                        sh "ansible-playbook -i inventory.ini ${env.ANSIBLE_PLAYBOOK} --private-key=${SSH_KEY}"
+                    }
                 }
             }
         }
