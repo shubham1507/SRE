@@ -1,71 +1,114 @@
 provider "aws" {
-  region = "ap-south-1"
+  region = "ap-south-1" 
 }
 
-# Use existing VPC
-data "aws_vpc" "tool_installer_vpc" {
-  filter {
-    name   = "vpc-id"
-    values = ["vpc-01cf80d6a27c5bb2d"]
+# VPC
+resource "aws_vpc" "main_vpc" {
+  cidr_block = "10.0.0.0/16"
+
+  tags = {
+    Name = "main_vpc"
   }
 }
 
 # Subnet
-resource "aws_subnet" "tool_installer_subnet" {
-  vpc_id                  = "vpc-01cf80d6a27c5bb2d"
+resource "aws_subnet" "main_subnet" {
+  vpc_id                  = aws_vpc.main_vpc.id
   cidr_block              = "10.0.1.0/24"
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = true  
 
   tags = {
-    Name = "tool_installer_subnet"
+    Name = "main_subnet"
   }
 }
 
 # Internet Gateway
-resource "aws_internet_gateway" "tool_installer_igw" {
-  vpc_id = "vpc-01cf80d6a27c5bb2d"
+resource "aws_internet_gateway" "main_igw" {
+  vpc_id = aws_vpc.main_vpc.id
 
   tags = {
-    Name = "tool_installer_igw"
+    Name = "main_igw"
   }
 }
 
 # Route Table
-resource "aws_route_table" "tool_installer_route_table" {
-  vpc_id = "vpc-01cf80d6a27c5bb2d"
+resource "aws_route_table" "main_route_table" {
+  vpc_id = aws_vpc.main_vpc.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.tool_installer_igw.id
+    gateway_id = aws_internet_gateway.main_igw.id
   }
 
   tags = {
-    Name = "tool_installer_route_table"
+    Name = "main_route_table"
   }
 }
 
 # Associate Route Table with Subnet
-resource "aws_route_table_association" "tool_installer_route_table_association" {
-  subnet_id      = aws_subnet.tool_installer_subnet.id
-  route_table_id = aws_route_table.tool_installer_route_table.id
+resource "aws_route_table_association" "main_route_table_association" {
+  subnet_id      = aws_subnet.main_subnet.id
+  route_table_id = aws_route_table.main_route_table.id
 }
 
-# Use existing Security Group
-data "aws_security_group" "existing_sg" {
-  filter {
-    name   = "group-name"
-    values = ["launch-wizard-16"]
+# Security Group
+resource "aws_security_group" "main_sg" {
+  vpc_id = aws_vpc.main_vpc.id
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["13.233.177.0/29"]  # Replace with your IP range or trusted IP addresses
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 8081
+    to_port     = 8081
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "main_sg"
   }
 }
 
 # Jenkins Target EC2 Instance
 resource "aws_instance" "jenkins_target" {
-  ami                         = "ami-0ad21ae1d0696ad58"
-  instance_type               = "t3.medium"
-  subnet_id                   = aws_subnet.tool_installer_subnet.id
-  key_name                    = "NexaJenkins"
-  vpc_security_group_ids      = [data.aws_security_group.existing_sg.id]
-  associate_public_ip_address = true
+  ami           = "ami-0ad21ae1d0696ad58"  # Replace with a valid AMI ID
+  instance_type = "t3.medium"
+  subnet_id     = aws_subnet.main_subnet.id
+  key_name       = "NexaJenkins"  # Key pair name
+  vpc_security_group_ids = [aws_security_group.main_sg.id]
 
   tags = {
     Name = "Jenkins-target"
@@ -74,12 +117,11 @@ resource "aws_instance" "jenkins_target" {
 
 # Nexus EC2 Instance
 resource "aws_instance" "nexus" {
-  ami                         = "ami-0ad21ae1d0696ad58"
-  instance_type               = "t3.medium"
-  subnet_id                   = aws_subnet.tool_installer_subnet.id
-  key_name                    = "NexaJenkins"
-  vpc_security_group_ids      = [data.aws_security_group.existing_sg.id]
-  associate_public_ip_address = true
+  ami           = "ami-0ad21ae1d0696ad58"  # Replace with a valid AMI ID
+  instance_type = "t3.medium"
+  subnet_id     = aws_subnet.main_subnet.id
+  key_name       = "NexaJenkins"  # Key pair name
+  vpc_security_group_ids = [aws_security_group.main_sg.id]
 
   tags = {
     Name = "Nexus"
@@ -88,12 +130,11 @@ resource "aws_instance" "nexus" {
 
 # Kubernetes EC2 Instance
 resource "aws_instance" "kubernetes" {
-  ami                         = "ami-0ad21ae1d0696ad58"
-  instance_type               = "t3.medium"
-  subnet_id                   = aws_subnet.tool_installer_subnet.id
-  key_name                    = "NexaJenkins"
-  vpc_security_group_ids      = [data.aws_security_group.existing_sg.id]
-  associate_public_ip_address = true
+  ami           = "ami-0ad21ae1d0696ad58"  # Replace with a valid AMI ID
+  instance_type = "t3.medium"
+  subnet_id     = aws_subnet.main_subnet.id
+  key_name       = "NexaJenkins"  # Key pair name
+  vpc_security_group_ids = [aws_security_group.main_sg.id]
 
   tags = {
     Name = "Kubernetes"
