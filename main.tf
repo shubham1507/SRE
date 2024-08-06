@@ -1,5 +1,5 @@
 provider "aws" {
-  region = "ap-south-1" 
+  region = "ap-south-1"
 }
 
 # VPC
@@ -90,6 +90,14 @@ resource "aws_security_group" "main_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # Allow ICMP (Ping) traffic
+  ingress {
+    from_port   = -1
+    to_port     = -1
+    protocol    = "icmp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -104,11 +112,11 @@ resource "aws_security_group" "main_sg" {
 
 # Jenkins Target EC2 Instance
 resource "aws_instance" "jenkins_target" {
-  ami           = "ami-0ad21ae1d0696ad58"  # Replace with a valid AMI ID
-  instance_type = "t3.medium"
-  subnet_id     = aws_subnet.main_subnet.id
-  key_name       = "NexaJenkins"  # Key pair name
-  vpc_security_group_ids = [aws_security_group.main_sg.id]
+  ami                         = "ami-0ad21ae1d0696ad58"  # Replace with a valid AMI ID
+  instance_type               = "t3.medium"
+  subnet_id                   = aws_subnet.main_subnet.id
+  key_name                    = "NexaJenkins"  # Key pair name
+  vpc_security_group_ids      = [aws_security_group.main_sg.id]
 
   tags = {
     Name = "Jenkins-target"
@@ -117,11 +125,11 @@ resource "aws_instance" "jenkins_target" {
 
 # Nexus EC2 Instance
 resource "aws_instance" "nexus" {
-  ami           = "ami-0ad21ae1d0696ad58"  # Replace with a valid AMI ID
-  instance_type = "t3.medium"
-  subnet_id     = aws_subnet.main_subnet.id
-  key_name       = "NexaJenkins"  # Key pair name
-  vpc_security_group_ids = [aws_security_group.main_sg.id]
+  ami                         = "ami-0ad21ae1d0696ad58"  # Replace with a valid AMI ID
+  instance_type               = "t3.medium"
+  subnet_id                   = aws_subnet.main_subnet.id
+  key_name                    = "NexaJenkins"  # Key pair name
+  vpc_security_group_ids      = [aws_security_group.main_sg.id]
 
   tags = {
     Name = "Nexus"
@@ -130,11 +138,11 @@ resource "aws_instance" "nexus" {
 
 # Kubernetes EC2 Instance
 resource "aws_instance" "kubernetes" {
-  ami           = "ami-0ad21ae1d0696ad58"  # Replace with a valid AMI ID
-  instance_type = "t3.medium"
-  subnet_id     = aws_subnet.main_subnet.id
-  key_name       = "NexaJenkins"  # Key pair name
-  vpc_security_group_ids = [aws_security_group.main_sg.id]
+  ami                         = "ami-0ad21ae1d0696ad58"  # Replace with a valid AMI ID
+  instance_type               = "t3.medium"
+  subnet_id                   = aws_subnet.main_subnet.id
+  key_name                    = "NexaJenkins"  # Key pair name
+  vpc_security_group_ids      = [aws_security_group.main_sg.id]
 
   tags = {
     Name = "Kubernetes"
