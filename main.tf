@@ -59,38 +59,9 @@ resource "aws_security_group" "main_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["13.233.177.0/29"]  # Replace with your IP range or trusted IP addresses
-  }
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 8081
-    to_port     = 8081
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # Allow ICMP (Ping) traffic
   ingress {
     from_port   = -1
     to_port     = -1
@@ -110,26 +81,26 @@ resource "aws_security_group" "main_sg" {
   }
 }
 
-# Jenkins Target EC2 Instance
-resource "aws_instance" "jenkins_target" {
-  ami                         = "ami-0ad21ae1d0696ad58"  # Replace with a valid AMI ID
-  instance_type               = "t3.medium"
-  subnet_id                   = aws_subnet.main_subnet.id
-  key_name                    = "NexaJenkins"  # Key pair name
-  vpc_security_group_ids      = [aws_security_group.main_sg.id]
+# Jenkins EC2 Instance
+resource "aws_instance" "jenkins" {
+  ami           = "ami-0ad21ae1d0696ad58"  # Replace with a valid AMI ID
+  instance_type = "t3.medium"
+  subnet_id     = aws_subnet.main_subnet.id
+  key_name       = "NexaJenkins"  # Key pair name
+  vpc_security_group_ids = [aws_security_group.main_sg.id]
 
   tags = {
-    Name = "Jenkins-target"
+    Name = "Jenkins"
   }
 }
 
 # Nexus EC2 Instance
 resource "aws_instance" "nexus" {
-  ami                         = "ami-0ad21ae1d0696ad58"  # Replace with a valid AMI ID
-  instance_type               = "t3.medium"
-  subnet_id                   = aws_subnet.main_subnet.id
-  key_name                    = "NexaJenkins"  # Key pair name
-  vpc_security_group_ids      = [aws_security_group.main_sg.id]
+  ami           = "ami-0ad21ae1d0696ad58"  # Replace with a valid AMI ID
+  instance_type = "t3.medium"
+  subnet_id     = aws_subnet.main_subnet.id
+  key_name       = "NexaJenkins"  # Key pair name
+  vpc_security_group_ids = [aws_security_group.main_sg.id]
 
   tags = {
     Name = "Nexus"
@@ -138,11 +109,11 @@ resource "aws_instance" "nexus" {
 
 # Kubernetes EC2 Instance
 resource "aws_instance" "kubernetes" {
-  ami                         = "ami-0ad21ae1d0696ad58"  # Replace with a valid AMI ID
-  instance_type               = "t3.medium"
-  subnet_id                   = aws_subnet.main_subnet.id
-  key_name                    = "NexaJenkins"  # Key pair name
-  vpc_security_group_ids      = [aws_security_group.main_sg.id]
+  ami           = "ami-0ad21ae1d0696ad58"  # Replace with a valid AMI ID
+  instance_type = "t3.medium"
+  subnet_id     = aws_subnet.main_subnet.id
+  key_name       = "NexaJenkins"  # Key pair name
+  vpc_security_group_ids = [aws_security_group.main_sg.id]
 
   tags = {
     Name = "Kubernetes"
@@ -150,12 +121,12 @@ resource "aws_instance" "kubernetes" {
 }
 
 # Outputs
-output "jenkins_target_public_ip" {
-  value = aws_instance.jenkins_target.public_ip
+output "jenkins_public_ip" {
+  value = aws_instance.jenkins.public_ip
 }
 
-output "jenkins_target_public_dns" {
-  value = aws_instance.jenkins_target.public_dns
+output "jenkins_public_dns" {
+  value = aws_instance.jenkins.public_dns
 }
 
 output "nexus_public_ip" {
