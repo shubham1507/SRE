@@ -132,4 +132,39 @@ resource "aws_instance" "nexus" {
 
 # Kubernetes EC2 Instance
 resource "aws_instance" "kubernetes" {
-  ami                         = "ami-0ad21ae1d0696ad58"
+  ami                         = "ami-0ad21ae1d0696ad58"  
+  instance_type               = "t3.medium"
+  subnet_id                   = aws_subnet.tool_installer_subnet.id
+  key_name                    = "NexaJenkins"  
+  vpc_security_group_ids      = [aws_security_group.tool_installer_sg.id]
+  associate_public_ip_address = true
+
+  tags = {
+    Name = "Kubernetes"
+  }
+}
+
+# Outputs
+output "jenkins_target_public_ip" {
+  value = aws_instance.jenkins_target.public_ip
+}
+
+output "jenkins_target_public_dns" {
+  value = aws_instance.jenkins_target.public_dns
+}
+
+output "nexus_public_ip" {
+  value = aws_instance.nexus.public_ip
+}
+
+output "nexus_public_dns" {
+  value = aws_instance.nexus.public_dns
+}
+
+output "kubernetes_public_ip" {
+  value = aws_instance.kubernetes.public_ip
+}
+
+output "kubernetes_public_dns" {
+  value = aws_instance.kubernetes.public_dns
+}
