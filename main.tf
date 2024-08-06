@@ -82,7 +82,7 @@ resource "aws_security_group" "main_sg" {
 }
 
 # Jenkins EC2 Instance
-resource "aws_instance" "jenkins" {
+resource "aws_instance" "jenkins_target" {
   ami           = "ami-0ad21ae1d0696ad58"  # Replace with a valid AMI ID
   instance_type = "t3.medium"
   subnet_id     = aws_subnet.main_subnet.id
@@ -121,12 +121,12 @@ resource "aws_instance" "kubernetes" {
 }
 
 # Outputs
-output "jenkins_public_ip" {
-  value = aws_instance.jenkins.public_ip
+output "jenkins_target_public_ip" {
+  value = aws_instance.jenkins_target.public_ip
 }
 
-output "jenkins_public_dns" {
-  value = aws_instance.jenkins.public_dns
+output "jenkins_target_public_dns" {
+  value = aws_instance.jenkins_target.public_dns
 }
 
 output "nexus_public_ip" {
