@@ -4,12 +4,15 @@ provider "aws" {
 
 # Use existing VPC
 data "aws_vpc" "tool_installer_vpc" {
-  vpc_id = "vpc-01cf80d6a27c5bb2d"
+  filter {
+    name   = "vpc-id"
+    values = ["vpc-01cf80d6a27c5bb2d"]
+  }
 }
 
 # Subnet
 resource "aws_subnet" "tool_installer_subnet" {
-  vpc_id                  = data.aws_vpc.tool_installer_vpc.id
+  vpc_id                  = "vpc-01cf80d6a27c5bb2d"
   cidr_block              = "10.0.1.0/24"
   map_public_ip_on_launch = true
 
@@ -20,7 +23,7 @@ resource "aws_subnet" "tool_installer_subnet" {
 
 # Internet Gateway
 resource "aws_internet_gateway" "tool_installer_igw" {
-  vpc_id = data.aws_vpc.tool_installer_vpc.id
+  vpc_id = "vpc-01cf80d6a27c5bb2d"
 
   tags = {
     Name = "tool_installer_igw"
@@ -29,7 +32,7 @@ resource "aws_internet_gateway" "tool_installer_igw" {
 
 # Route Table
 resource "aws_route_table" "tool_installer_route_table" {
-  vpc_id = data.aws_vpc.tool_installer_vpc.id
+  vpc_id = "vpc-01cf80d6a27c5bb2d"
 
   route {
     cidr_block = "0.0.0.0/0"
