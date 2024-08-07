@@ -3,57 +3,57 @@ provider "aws" {
 }
 
 # VPC
-resource "aws_vpc" "main_vpc" {
+resource "aws_vpc" "sre_vpc" {
   cidr_block = "10.0.0.0/16"
 
   tags = {
-    Name = "main_vpc"
+    Name = "sre_vpc"
   }
 }
 
 # Subnet
-resource "aws_subnet" "main_subnet" {
-  vpc_id                  = aws_vpc.main_vpc.id
+resource "aws_subnet" "sre_subnet" {
+  vpc_id                  = aws_vpc.sre_vpc.id
   cidr_block              = "10.0.1.0/24"
   map_public_ip_on_launch = true  
 
   tags = {
-    Name = "main_subnet"
+    Name = "sre_subnet"
   }
 }
 
 # Internet Gateway
-resource "aws_internet_gateway" "main_igw" {
-  vpc_id = aws_vpc.main_vpc.id
+resource "aws_internet_gateway" "sre_igw" {
+  vpc_id = aws_vpc.sre_vpc.id
 
   tags = {
-    Name = "main_igw"
+    Name = "sre_igw"
   }
 }
 
 # Route Table
-resource "aws_route_table" "main_route_table" {
-  vpc_id = aws_vpc.main_vpc.id
+resource "aws_route_table" "sre_route_table" {
+  vpc_id = aws_vpc.sre_vpc.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.main_igw.id
+    gateway_id = aws_internet_gateway.sre_igw.id
   }
 
   tags = {
-    Name = "main_route_table"
+    Name = "sre_route_table"
   }
 }
 
 # Associate Route Table with Subnet
-resource "aws_route_table_association" "main_route_table_association" {
-  subnet_id      = aws_subnet.main_subnet.id
-  route_table_id = aws_route_table.main_route_table.id
+resource "aws_route_table_association" "sre_route_table_association" {
+  subnet_id      = aws_subnet.sre_subnet.id
+  route_table_id = aws_route_table.sre_route_table.id
 }
 
 # Security Group
-resource "aws_security_group" "main_sg" {
-  vpc_id = aws_vpc.main_vpc.id
+resource "aws_security_group" "sre_sg" {
+  vpc_id = aws_vpc.sre_vpc.id
 
   ingress {
     from_port   = 22
@@ -77,7 +77,7 @@ resource "aws_security_group" "main_sg" {
   }
 
   tags = {
-    Name = "main_sg"
+    Name = "sre_sg"
   }
 }
 
@@ -85,9 +85,9 @@ resource "aws_security_group" "main_sg" {
 resource "aws_instance" "jenkins_target" {
   ami           = "ami-0ad21ae1d0696ad58"  # Replace with a valid AMI ID
   instance_type = "t3.medium"
-  subnet_id     = aws_subnet.main_subnet.id
+  subnet_id     = aws_subnet.sre_subnet.id
   key_name       = "NexaJenkins"  # Key pair name
-  vpc_security_group_ids = [aws_security_group.main_sg.id]
+  vpc_security_group_ids = [aws_security_group.sre_sg.id]
 
   tags = {
     Name = "Jenkins"
@@ -98,9 +98,9 @@ resource "aws_instance" "jenkins_target" {
 resource "aws_instance" "nexus" {
   ami           = "ami-0ad21ae1d0696ad58"  # Replace with a valid AMI ID
   instance_type = "t3.medium"
-  subnet_id     = aws_subnet.main_subnet.id
+  subnet_id     = aws_subnet.sre_subnet.id
   key_name       = "NexaJenkins"  # Key pair name
-  vpc_security_group_ids = [aws_security_group.main_sg.id]
+  vpc_security_group_ids = [aws_security_group.sre_sg.id]
 
   tags = {
     Name = "Nexus"
@@ -111,9 +111,9 @@ resource "aws_instance" "nexus" {
 resource "aws_instance" "kubernetes" {
   ami           = "ami-0ad21ae1d0696ad58"  # Replace with a valid AMI ID
   instance_type = "t3.medium"
-  subnet_id     = aws_subnet.main_subnet.id
+  subnet_id     = aws_subnet.sre_subnet.id
   key_name       = "NexaJenkins"  # Key pair name
-  vpc_security_group_ids = [aws_security_group.main_sg.id]
+  vpc_security_group_ids = [aws_security_group.sre_sg.id]
 
   tags = {
     Name = "Kubernetes"
