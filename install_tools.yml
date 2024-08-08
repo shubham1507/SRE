@@ -3,6 +3,10 @@
   hosts: jenkins_target
   become: yes
   tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
     - name: Install Java
       apt:
         name: openjdk-11-jdk
@@ -29,6 +33,10 @@
   hosts: Nexus
   become: yes
   tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
     - name: Install Java
       apt:
         name: openjdk-11-jdk
@@ -72,6 +80,10 @@
   hosts: Kubernetes
   become: yes
   tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
     - name: Install Snap
       apt:
         name: snapd
