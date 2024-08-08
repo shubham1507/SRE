@@ -2,50 +2,99 @@ pipeline {
     agent any
 
     environment {
-        GIT_REPO = 'https://github.com/shubham1507/SRE.git'
-        INVENTORY_FILE = 'inventory.ini' // Adjusted path if file is at root
-        PLAYBOOK_FILE = 'install_tools.yml' // Adjusted path if file is at root
+        // Absolute path to the directory containing the inventory file and playbooks
+        ANSIBLE_PLAYBOOKS_PATH = '/home/ubuntu/ansible_playbooks'
+        INVENTORY_FILE = "${ANSIBLE_PLAYBOOKS_PATH}/inventory.ini"
     }
 
     stages {
-        stage('Clone Repository') {
-            steps {
-                git branch: 'master', url: "${GIT_REPO}"
-                sh 'ls -R' // Recursively list files to confirm directory structure
-            }
-        }
-
-        stage('Check Server Reachability') {
+        stage('Check File Existence') {
             steps {
                 script {
-                    def inventoryFile = readFile("${INVENTORY_FILE}")
-                    def servers = inventoryFile.split('\n').findAll { it && !it.startsWith('[') && !it.startsWith(';') && !it.startsWith('#') }
-                    def reachable = true
-                    servers.each { line ->
-                        def server = line.split()[0]
-                        def result = sh script: "ping -c 1 ${server}", returnStatus: true
-                        if (result != 0) {
-                            echo "Server ${server} is not reachable"
-                            reachable = false
-                        }
-                    }
-                    if (!reachable) {
-                        error "One or more servers are not reachable"
+                    // Check if the inventory file exists
+                    def fileExists = fileExists("${INVENTORY_FILE}")
+                    if (!fileExists) {
+                        error "The file ${INVENTORY_FILE} does not exist in the workspace."
+                    } else {
+                        echo "File ${INVENTORY_FILE} found in workspace."
                     }
                 }
             }
         }
 
-        stage('Run Ansible Playbook') {
+        stage('Read Inventory and Deploy Tools') {
             steps {
-                withCredentials([sshUserPrivateKey(credentialsId: 'ssh-credentials-id', keyFileVariable: 'SSH_KEY')]) {
-                    writeFile file: 'ansible.cfg', text: """
-                    [defaults]
-                    host_key_checking = False
-                    """
-                    sh """
-                        ansible-playbook -i ${INVENTORY_FILE} ${PLAYBOOK_FILE} --private-key=${SSH_KEY}
-                    """
+                withCredentials([sshUserPrivateKey(credentialsId: 'ssh-credentials-id', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')]) {
+                    script {
+                        // Read the inventory file
+                        def inventoryContent = sh(script: "cat ${INVENTORY_FILE}", returnStdout: true).trim()
+                        def inventoryLines = inventoryContent.split('\n')
+                        
+                        def servers = [:]
+                        def currentServerType = null
+
+                        // Parse inventory file to extract IP addresses
+                        inventoryLines.each { line ->
+                            line = line.trim()
+                            if (line.startsWith('[')) {
+                                // Identify server group
+                                if (line.contains('jenkins')) {
+                                    currentServerType = 'jenkins'
+                                } else if (line.contains('nexus')) {
+                                    currentServerType = 'nexus'
+                                } else if (line.contains('kubernetes')) {
+                                    currentServerType = 'kubernetes'
+                                }
+                            } else if (line && !line.startsWith('#') && currentServerType) {
+                                def parts = line.split()
+                                if (parts.size() > 0) {
+                                    def ip = parts[0]
+                                    servers[currentServerType] = ip
+                                }
+                            }
+                        }
+
+                        // Deploy tools based on extracted IPs
+                        if (servers.jenkins) {
+                            echo "Installing tools on Jenkins server: ${servers.jenkins}"
+                            sh """
+                            ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ${SSH_USER}@${servers.jenkins} '
+                            cd ${ANSIBLE_PLAYBOOKS_PATH} &&
+                            ansible-playbook -i ${INVENTORY_FILE} install_tools.yml -e "install_jenkins=True"'
+                            """
+                        }
+
+                        if (servers.nexus) {
+                            echo "Installing tools on Nexus server: ${servers.nexus}"
+                            sh """
+                            ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ${SSH_USER}@${servers.nexus} '
+                            cd ${ANSIBLE_PLAYBOOKS_PATH} &&
+                            ansible-playbook -i ${INVENTORY_FILE} install_tools.yml -e "install_nexus=True"'
+                            """
+                        }
+
+                        if (servers.kubernetes) {
+                            echo "Installing tools on Kubernetes server: ${servers.kubernetes}"
+                            sh """
+                            ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ${SSH_USER}@${servers.kubernetes} '
+                            cd ${ANSIBLE_PLAYBOOKS_PATH} &&
+                            ansible-playbook -i ${INVENTORY_FILE} install_tools.yml -e "install_microk8s=True"'
+                            """
+                        }
+
+                        if (!servers) {
+                            error "No valid servers found in the inventory file"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Verify Installation') {
+            steps {
+                script {
+                    echo "Verifying installations..."
+                    // Add any verification steps here, if necessary
                 }
             }
         }
