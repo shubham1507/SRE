@@ -31,3 +31,112 @@
         name: jenkins
         state: started
         enabled: yes
+
+    - name: Allocate more memory for Jenkins Java
+      lineinfile:
+        path: /etc/default/jenkins
+        regexp: '^JAVA_ARGS=.*'
+        line: 'JAVA_ARGS="-Djava.awt.headless=true -Xms512m -Xmx2048m"'
+        state: present
+
+    - name: Install firewalld
+      apt:
+        name: firewalld
+        state: present
+
+    - name: Ensure firewalld is running and enabled
+      service:
+        name: firewalld
+        state: started
+        enabled: yes
+
+    - name: Open port 8080 for Jenkins
+      firewalld:
+        port: 8080/tcp
+        permanent: yes
+        state: enabled
+        immediate: yes
+
+    - name: Reload firewalld to apply changes
+      command:
+        cmd: firewall-cmd --reload
+
+- name: Install Nexus
+  hosts: nexus
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Add OpenJDK repository
+      apt_repository:
+        repo: ppa:openjdk-r/ppa
+        state: present
+
+    - name: Install Java
+      apt:
+        name: openjdk-11-jdk
+        state: present
+
+    - name: Download Nexus
+      get_url:
+        url: https://download.sonatype.com/nexus/3/latest-unix.tar.gz
+        dest: /tmp/nexus.tar.gz
+
+    - name: Extract Nexus
+      unarchive:
+        src: /tmp/nexus.tar.gz
+        dest: /opt/
+        remote_src: yes
+
+    - name: Create symlink for Nexus
+      file:
+        src: /opt/nexus-3.*
+        dest: /opt/nexus
+        state: link
+
+    - name: Create Nexus user
+      user:
+        name: nexus
+        shell: /bin/bash
+        create_home: yes
+
+    - name: Change ownership of Nexus directory
+      file:
+        path: /opt/nexus
+        owner: nexus
+        group: nexus
+        recurse: yes
+
+    - name: Start Nexus
+      shell: |
+        su - nexus -c "/opt/nexus/bin/nexus start"
+
+- name: Install MicroK8s
+  hosts: kubernetes
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Snap
+      apt:
+        name: snapd
+        state: present
+
+    - name: Install MicroK8s
+      snap:
+        name: microk8s
+        state: present
+
+    - name: Add user to microk8s group
+      user:
+        name: "{{ ansible_user }}"
+        groups: microk8s
+        append: yes
+
+    - name: Enable MicroK8s services
+      command:
+        cmd: microk8s status --wait-ready
