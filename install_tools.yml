@@ -7,6 +7,11 @@
       apt:
         update_cache: yes
 
+    - name: Add OpenJDK repository
+      apt_repository:
+        repo: ppa:openjdk-r/ppa
+        state: present
+
     - name: Install Java
       apt:
         name: openjdk-11-jdk
@@ -36,6 +41,11 @@
     - name: Update apt cache
       apt:
         update_cache: yes
+
+    - name: Add OpenJDK repository
+      apt_repository:
+        repo: ppa:openjdk-r/ppa
+        state: present
 
     - name: Install Java
       apt:
