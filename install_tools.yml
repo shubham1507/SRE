@@ -21,11 +21,16 @@
       apt_key:
         url: https://pkg.jenkins.io/debian/jenkins.io.key
         state: present
+        validate_certs: yes
 
     - name: Add Jenkins repository
       apt_repository:
         repo: deb http://pkg.jenkins.io/debian-stable binary/
         state: present
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
 
     - name: Install Jenkins
       apt:
