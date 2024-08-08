@@ -7,21 +7,10 @@
       apt:
         update_cache: yes
 
-    - name: Add OpenJDK repository
-      apt_repository:
-        repo: ppa:openjdk-r/ppa
-        state: present
-
-    - name: Install Java
-      apt:
-        name: openjdk-11-jdk
-        state: present
-
     - name: Add Jenkins GPG key
       apt_key:
         url: https://pkg.jenkins.io/debian/jenkins.io.key
         state: present
-        validate_certs: yes
 
     - name: Add Jenkins repository
       apt_repository:
@@ -36,7 +25,6 @@
       apt:
         name: jenkins
         state: present
-        update_cache: yes
 
     - name: Start and enable Jenkins
       systemd:
