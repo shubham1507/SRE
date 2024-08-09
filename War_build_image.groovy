@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        NEXUS_URL = 'http://localhost:8081/repository/maven-releases/'
+        NEXUS_URL = 'http://192.168.10.36:8081/repository/maven-releases/'
         NEXUS_CREDENTIALS_ID = 'nexus'
         DOCKER_CREDENTIALS_ID = 'dockerhub'
         DOCKER_IMAGE_NAME = '839024/war_build_image'
@@ -11,7 +11,6 @@ pipeline {
         GROUP_ID = 'com.example'
         ARTIFACT_ID = 'mywebapp'
         VERSION = '0.0.5'
-        REPO = 'maven-releases'
     }
 
     tools {
@@ -33,10 +32,10 @@ pipeline {
             }
         }
 
-        stage('Verify WAR File') {
+        stage('Verify WAR File Presence') {
             steps {
                 script {
-                    sh 'ls -al target/'
+                    sh 'ls -al target/' // Check if WAR file is present in the target directory
                 }
             }
         }
@@ -66,14 +65,15 @@ pipeline {
                     def dockerfileContent = """
                     FROM openjdk:11-jre
                     RUN apt-get update && apt-get install -y curl
+                    ENV NEXUS_URL=${NEXUS_URL}
                     RUN curl -O ${NEXUS_URL}${GROUP_ID.replace('.', '/')}/${ARTIFACT_ID}/${VERSION}/${ARTIFACT_ID}-${VERSION}.war
-                    COPY ${WAR_FILE_NAME} /usr/local/tomcat/webapps/${WAR_FILE_NAME}
+                    COPY target/${WAR_FILE_NAME} /usr/local/tomcat/webapps/${WAR_FILE_NAME}
                     CMD ["catalina.sh", "run"]
                     """
 
                     writeFile file: 'Dockerfile', text: dockerfileContent
 
-                    // Build Docker image using the traditional build command
+                    // Build Docker image
                     sh 'docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} -f Dockerfile .'
                 }
             }
