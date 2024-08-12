@@ -1,0 +1,261 @@
+Started by user Shubham Nitin Jyoti Joshi
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on Jenkins in /var/snap/jenkins/4712/workspace/deploy_to_k8s
+[Pipeline] {
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Checkout Repository)
+[Pipeline] git
+The recommended git tool is: NONE
+No credentials specified
+ > git rev-parse --resolve-git-dir /var/snap/jenkins/4712/workspace/deploy_to_k8s/.git # timeout=10
+Fetching changes from the remote Git repository
+ > git config remote.origin.url https://github.com/shubham1507/SRE.git # timeout=10
+Fetching upstream changes from https://github.com/shubham1507/SRE.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.34.1'
+ > git fetch --tags --force --progress -- https://github.com/shubham1507/SRE.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse refs/remotes/origin/master^{commit} # timeout=10
+Checking out Revision 3a9cd0a4f3a15ff423188955485f563e46610f6e (refs/remotes/origin/master)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 3a9cd0a4f3a15ff423188955485f563e46610f6e # timeout=10
+ > git branch -a -v --no-abbrev # timeout=10
+ > git branch -D master # timeout=10
+ > git checkout -b master 3a9cd0a4f3a15ff423188955485f563e46610f6e # timeout=10
+Commit message: "Update deploy_to_microk8s.groovy"
+ > git rev-list --no-walk 0626d8814b10013dbc27ad2dcdcb59411b01c0eb # timeout=10
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Install MicroK8s)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ which microk8s
+/snap/bin/microk8s
+[Pipeline] echo
+MicroK8s is already installed.
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Install Helm)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ which helm
+/usr/local/bin/helm
+[Pipeline] echo
+Helm is already installed.
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Setup Kubernetes Configuration)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ sudo snap alias microk8s.kubectl kubectl
++ kubectl config set-context --current --namespace=default
++ kubectl config use-context microk8s
++ kubectl cluster-info
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Verify Kubernetes Access)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ kubectl cluster-info
++ kubectl get nodes
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Test Helm Access)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ helm repo update
+WARNING: Kubernetes configuration file is group-readable. This is insecure. Location: /var/snap/microk8s/current/credentials/client.config
+Hang tight while we grab the latest from your chart repositories...
+...Successfully got an update from the "grafana" chart repository
+...Successfully got an update from the "prometheus-community" chart repository
+Update Complete. ⎈Happy Helming!⎈
++ helm search repo
+WARNING: Kubernetes configuration file is group-readable. This is insecure. Location: /var/snap/microk8s/current/credentials/client.config
+NAME                                              	CHART VERSION	APP VERSION      	DESCRIPTION                                       
+grafana/alloy                                     	0.6.0        	v1.3.0           	Grafana Alloy                                     
+grafana/beyla                                     	1.3.0        	1.7.0            	eBPF-based autoinstrumentation HTTP, HTTP2 and ...
+grafana/enterprise-logs                           	2.5.0        	v1.5.2           	Grafana Enterprise Logs                           
+grafana/enterprise-logs-simple                    	1.3.0        	v1.4.0           	DEPRECATED Grafana Enterprise Logs (Simple Scal...
+grafana/enterprise-metrics                        	1.10.0       	v1.7.0           	DEPRECATED Grafana Enterprise Metrics             
+grafana/fluent-bit                                	2.6.0        	v2.1.0           	Uses fluent-bit Loki go plugin for gathering lo...
+grafana/grafana                                   	8.4.4        	11.1.3           	The leading tool for querying and visualizing t...
+grafana/grafana-agent                             	0.42.0       	v0.42.0          	Grafana Agent                                     
+grafana/grafana-agent-operator                    	0.4.1        	0.42.0           	A Helm chart for Grafana Agent Operator           
+grafana/grafana-sampling                          	0.1.1        	v0.40.2          	A Helm chart for a layered OTLP tail sampling a...
+grafana/k6-operator                               	3.8.0        	0.0.16           	A Helm chart to install the k6-operator           
+grafana/k8s-monitoring                            	1.4.6        	2.8.0            	A Helm chart for gathering, scraping, and forwa...
+grafana/lgtm-distributed                          	2.1.0        	^7.3.9           	Umbrella chart for a distributed Loki, Grafana,...
+grafana/loki                                      	6.10.0       	3.1.1            	Helm chart for Grafana Loki and Grafana Enterpr...
+grafana/loki-canary                               	0.14.0       	2.9.1            	Helm chart for Grafana Loki Canary                
+grafana/loki-distributed                          	0.79.2       	2.9.8            	Helm chart for Grafana Loki in microservices mode 
+grafana/loki-simple-scalable                      	1.8.11       	2.6.1            	Helm chart for Grafana Loki in simple, scalable...
+grafana/loki-stack                                	2.10.2       	v2.9.3           	Loki: like Prometheus, but for logs.              
+grafana/meta-monitoring                           	1.0.0        	0.0.1            	A Helm chart for meta monitoring Grafana Loki, ...
+grafana/mimir-distributed                         	5.4.0        	2.13.0           	Grafana Mimir                                     
+grafana/mimir-openshift-experimental              	2.1.0        	2.0.0            	Grafana Mimir on OpenShift Experiment             
+grafana/oncall                                    	1.8.10       	v1.8.10          	Developer-friendly incident response with brill...
+grafana/phlare                                    	0.5.4        	0.5.1            	🔥 horizontally-scalable, highly-available, mul...
+grafana/promtail                                  	6.16.4       	3.0.0            	Promtail is an agent which ships the contents o...
+grafana/pyroscope                                 	1.7.1        	1.7.1            	🔥 horizontally-scalable, highly-available, mul...
+grafana/rollout-operator                          	0.16.0       	v0.17.0          	Grafana rollout-operator                          
+grafana/snyk-exporter                             	0.1.0        	v1.4.1           	Prometheus exporter for Snyk.                     
+grafana/synthetic-monitoring-agent                	0.3.0        	v0.9.3-0-gcd7aadd	Grafana's Synthetic Monitoring application. The...
+grafana/tempo                                     	1.10.2       	2.5.0            	Grafana Tempo Single Binary Mode                  
+grafana/tempo-distributed                         	1.16.2       	2.5.0            	Grafana Tempo in MicroService mode                
+grafana/tempo-vulture                             	0.5.0        	2.5.0            	Grafana Tempo Vulture - A tool to monitor Tempo...
+prometheus-community/alertmanager                 	1.12.0       	v0.27.0          	The Alertmanager handles alerts sent by client ...
+prometheus-community/alertmanager-snmp-notifier   	0.3.0        	v1.5.0           	The SNMP Notifier handles alerts coming from Pr...
+prometheus-community/jiralert                     	1.7.1        	v1.3.0           	A Helm chart for Kubernetes to install jiralert   
+prometheus-community/kube-prometheus-stack        	61.8.0       	v0.75.2          	kube-prometheus-stack collects Kubernetes manif...
+prometheus-community/kube-state-metrics           	5.25.1       	2.13.0           	Install kube-state-metrics to generate and expo...
+prometheus-community/prom-label-proxy             	0.9.0        	v0.10.0          	A proxy that enforces a given label in a given ...
+prometheus-community/prometheus                   	25.26.0      	v2.54.0          	Prometheus is a monitoring system and time seri...
+prometheus-community/prometheus-adapter           	4.11.0       	v0.12.0          	A Helm chart for k8s prometheus adapter           
+prometheus-community/prometheus-blackbox-exporter 	9.0.0        	v0.25.0          	Prometheus Blackbox Exporter                      
+prometheus-community/prometheus-cloudwatch-expo...	0.25.3       	0.15.5           	A Helm chart for prometheus cloudwatch-exporter   
+prometheus-community/prometheus-conntrack-stats...	0.5.10       	v0.4.18          	A Helm chart for conntrack-stats-exporter         
+prometheus-community/prometheus-consul-exporter   	1.0.0        	0.4.0            	A Helm chart for the Prometheus Consul Exporter   
+prometheus-community/prometheus-couchdb-exporter  	1.0.0        	1.0              	A Helm chart to export the metrics from couchdb...
+prometheus-community/prometheus-druid-exporter    	1.1.0        	v0.11.0          	Druid exporter to monitor druid metrics with Pr...
+prometheus-community/prometheus-elasticsearch-e...	6.3.0        	v1.7.0           	Elasticsearch stats exporter for Prometheus       
+prometheus-community/prometheus-fastly-exporter   	0.4.0        	v8.1.0           	A Helm chart for the Prometheus Fastly Exporter   
+prometheus-community/prometheus-ipmi-exporter     	0.4.0        	v1.8.0           	This is an IPMI exporter for Prometheus.          
+prometheus-community/prometheus-json-exporter     	0.13.0       	v0.6.0           	Install prometheus-json-exporter                  
+prometheus-community/prometheus-kafka-exporter    	2.10.0       	v1.7.0           	A Helm chart to export the metrics from Kafka i...
+prometheus-community/prometheus-memcached-exporter	0.3.4        	v0.14.4          	Prometheus exporter for Memcached metrics         
+prometheus-community/prometheus-modbus-exporter   	0.1.2        	0.4.1            	A Helm chart for prometheus-modbus-exporter       
+prometheus-community/prometheus-mongodb-exporter  	3.5.0        	0.40.0           	A Prometheus exporter for MongoDB metrics         
+prometheus-community/prometheus-mysql-exporter    	2.6.1        	v0.15.1          	A Helm chart for prometheus mysql exporter with...
+prometheus-community/prometheus-nats-exporter     	2.17.0       	0.15.0           	A Helm chart for prometheus-nats-exporter         
+prometheus-community/prometheus-nginx-exporter    	0.2.1        	0.11.0           	A Helm chart for the Prometheus NGINX Exporter    
+prometheus-community/prometheus-node-exporter     	4.38.0       	1.8.2            	A Helm chart for prometheus node-exporter         
+prometheus-community/prometheus-opencost-exporter 	0.1.1        	1.108.0          	Prometheus OpenCost Exporter                      
+prometheus-community/prometheus-operator          	9.3.2        	0.38.1           	DEPRECATED - This chart will be renamed. See ht...
+prometheus-community/prometheus-operator-admiss...	0.14.1       	0.75.2           	Prometheus Operator Admission Webhook             
+prometheus-community/prometheus-operator-crds     	13.0.2       	v0.75.2          	A Helm chart that collects custom resource defi...
+prometheus-community/prometheus-pgbouncer-exporter	0.3.0        	v0.8.0           	A Helm chart for prometheus pgbouncer-exporter    
+prometheus-community/prometheus-pingdom-exporter  	2.5.0        	20190610-1       	A Helm chart for Prometheus Pingdom Exporter      
+prometheus-community/prometheus-pingmesh-exporter 	0.4.0        	v1.2.1           	Prometheus Pingmesh Exporter                      
+prometheus-community/prometheus-postgres-exporter 	6.2.0        	v0.15.0          	A Helm chart for prometheus postgres-exporter     
+prometheus-community/prometheus-pushgateway       	2.14.0       	v1.9.0           	A Helm chart for prometheus pushgateway           
+prometheus-community/prometheus-rabbitmq-exporter 	1.12.1       	v0.29.0          	Rabbitmq metrics exporter for prometheus          
+prometheus-community/prometheus-redis-exporter    	6.5.0        	v1.62.0          	Prometheus exporter for Redis metrics             
+prometheus-community/prometheus-smartctl-exporter 	0.10.0       	v0.12.0          	A Helm chart for Kubernetes                       
+prometheus-community/prometheus-snmp-exporter     	5.5.0        	v0.26.0          	Prometheus SNMP Exporter                          
+prometheus-community/prometheus-sql-exporter      	0.1.0        	v0.5.4           	Prometheus SQL Exporter                           
+prometheus-community/prometheus-stackdriver-exp...	4.6.0        	v0.16.0          	Stackdriver exporter for Prometheus               
+prometheus-community/prometheus-statsd-exporter   	0.13.1       	v0.26.1          	A Helm chart for prometheus stats-exporter        
+prometheus-community/prometheus-systemd-exporter  	0.3.0        	0.6.0            	A Helm chart for prometheus systemd-exporter      
+prometheus-community/prometheus-to-sd             	0.4.2        	0.5.2            	Scrape metrics stored in prometheus format and ...
+prometheus-community/prometheus-windows-exporter  	0.4.0        	0.26.1           	A Helm chart for prometheus windows-exporter      
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Package Helm Charts)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ helm package prometheus-chart --version 1.0.0
+WARNING: Kubernetes configuration file is group-readable. This is insecure. Location: /var/snap/microk8s/current/credentials/client.config
+Successfully packaged chart and saved it to: /var/snap/jenkins/4712/workspace/deploy_to_k8s/prometheus-1.0.0.tgz
++ helm package grafana-chart --version 1.0.0
+WARNING: Kubernetes configuration file is group-readable. This is insecure. Location: /var/snap/microk8s/current/credentials/client.config
+Successfully packaged chart and saved it to: /var/snap/jenkins/4712/workspace/deploy_to_k8s/grafana-1.0.0.tgz
+[Pipeline] sh
++ ls -l grafana-1.0.0.tgz prometheus-1.0.0.tgz
+-rw-r--r-- 1 root root 675 Aug 12 16:21 grafana-1.0.0.tgz
+-rw-r--r-- 1 root root 678 Aug 12 16:21 prometheus-1.0.0.tgz
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Verify Helm Package)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ [ ! -f prometheus-1.0.0.tgz ]
++ [ ! -f grafana-1.0.0.tgz ]
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Deploy Prometheus and Grafana)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ ls -l
+total 76
+-rw-r--r-- 1 root root 5379 Aug 12 16:20 deploy_to_microk8s.groovy
+-rw-r--r-- 1 root root  675 Aug 12 16:21 grafana-1.0.0.tgz
+drwxr-xr-x 3 root root 4096 Aug 12 15:32 grafana-chart
+-rw-r--r-- 1 root root 1252 Aug 12 15:03 IAMPolicy.json
+-rw-r--r-- 1 root root 3265 Aug 12 15:03 Infra_creation.groovy
+-rw-r--r-- 1 root root 4607 Aug 12 15:03 infra_installation.groovy
+-rw-r--r-- 1 root root  572 Aug 12 15:03 install_jenkins.yml
+-rw-r--r-- 1 root root  458 Aug 12 15:03 install_microk8s.yml
+-rw-r--r-- 1 root root 1431 Aug 12 15:03 install_nexus.yml
+-rw-r--r-- 1 root root 2991 Aug 12 15:03 install_tools.yml
+-rw-r--r-- 1 root root   84 Aug 12 15:03 inventory.ini
+drwxr-xr-x 2 root root 4096 Aug 12 15:03 k8s-configs
+-rw-r--r-- 1 root root 2935 Aug 12 15:03 main.tf
+-rw-r--r-- 1 root root  678 Aug 12 16:21 prometheus-1.0.0.tgz
+drwxr-xr-x 3 root root 4096 Aug 12 15:32 prometheus-chart
+-rw-r--r-- 1 root root  215 Aug 12 15:03 README.md
+-rw-r--r-- 1 root root 3261 Aug 12 15:03 War_build_image.groovy
+[Pipeline] sh
++ helm install my-prometheus ./prometheus-1.0.0.tgz -f k8s-configs/prometheus-config.yaml
+WARNING: Kubernetes configuration file is group-readable. This is insecure. Location: /var/snap/microk8s/current/credentials/client.config
+NAME: my-prometheus
+LAST DEPLOYED: Mon Aug 12 16:21:40 2024
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
++ helm install my-grafana ./grafana-1.0.0.tgz -f k8s-configs/grafana-config.yaml
+WARNING: Kubernetes configuration file is group-readable. This is insecure. Location: /var/snap/microk8s/current/credentials/client.config
+NAME: my-grafana
+LAST DEPLOYED: Mon Aug 12 16:21:42 2024
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Declarative: Post Actions)
+[Pipeline] echo
+Cleaning up...
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+Finished: SUCCESS
