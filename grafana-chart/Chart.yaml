@@ -1,0 +1,7 @@
+# grafana-chart/Chart.yaml
+apiVersion: v2
+name: grafana
+description: A Helm chart for Grafana
+type: application
+version: 1.0.0
+appVersion: "8.0.0"
